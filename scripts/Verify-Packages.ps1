@@ -71,6 +71,9 @@ try {
     $profiles = Join-Path $temporary 'profiles'
     $cwd = Join-Path $temporary 'pinned-project'
     New-Item -ItemType Directory -Path $profiles, $cwd -Force | Out-Null
+    $cwdMarker = "cwd-$([Guid]::NewGuid().ToString('N'))"
+    $cwdMarkerValue = [Guid]::NewGuid().ToString('N')
+    [IO.File]::WriteAllText((Join-Path $cwd $cwdMarker), $cwdMarkerValue, $utf8)
     [IO.File]::WriteAllText((Join-Path $profiles 'mhx.mhx'), (@{ version=1; kind='dotnet-tool'; sources=@($feed) } | ConvertTo-Json), $utf8)
     [IO.File]::WriteAllText((Join-Path $cwd 'global.json'), '{"sdk":{"version":"8.0.100","rollForward":"disable"}}', $utf8)
     $nugetConfig = Join-Path $temporary 'install.config'
@@ -87,7 +90,8 @@ try {
         PROBE_EXIT = '23'
     }
     $tools = Join-Path $temporary 'tools'
-    $install = Invoke-Captured -File (Get-Command dotnet -CommandType Application).Source -Arguments @(
+    $dotnet = (Get-Command dotnet -CommandType Application | Select-Object -First 1).Source
+    $install = Invoke-Captured -File $dotnet -Arguments @(
         'tool', 'install', 'MHX', '--version', $version, '--tool-path', $tools, '--configfile', $nugetConfig
     ) -WorkingDirectory $root -Environment $environment
     if ($install.Exit -ne 0) { throw "Local MHX installation failed: $($install.Error) $($install.Output)" }
@@ -103,7 +107,11 @@ try {
             }
             $report = $result.Error | ConvertFrom-Json
             if (($report.args | ConvertTo-Json -Compress) -cne ($caller | ConvertTo-Json -Compress)) { throw 'Tool arguments changed.' }
-            if ($report.cwd -ne $cwd) { throw 'Tool working directory changed.' }
+            # macOS resolves /var through /private/var in getcwd(). Compare the
+            # selected directory's identity rather than its lexical spelling.
+            if ([IO.File]::ReadAllText((Join-Path $report.cwd $cwdMarker)) -cne $cwdMarkerValue) {
+                throw 'Tool working directory changed.'
+            }
             Write-Host "PASS $cache cache: $entry"
         }
         $environment.DOTNET_CLI_HOME = Join-Path $temporary 'second-sdk-home'

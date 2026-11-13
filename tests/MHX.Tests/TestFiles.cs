@@ -47,7 +47,17 @@ internal sealed class TestFiles : IDisposable
         finally { if (!process.HasExited) process.Kill(true); process.WaitForExit(); }
         return (process.ExitCode, await output.WaitAsync(TimeSpan.FromSeconds(5)), await error.WaitAsync(TimeSpan.FromSeconds(5)));
     }
-    public void Dispose() => System.IO.Directory.Delete(Directory, recursive: true);
+    public void Dispose()
+    {
+        for (int attempt = 0; ; attempt++)
+        {
+            try { System.IO.Directory.Delete(Directory, recursive: true); return; }
+            // A terminated Windows job can briefly retain directory handles.
+            // Only retry sharing/lock violations, and still fail after two seconds.
+            catch (IOException error) when (OperatingSystem.IsWindows() && attempt < 80 && (error.HResult & 0xFFFF) is 32 or 33)
+            { Thread.Sleep(25); }
+        }
+    }
     private static string FindRoot()
     {
         for (DirectoryInfo? directory = new(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)

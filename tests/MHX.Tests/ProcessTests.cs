@@ -65,12 +65,15 @@ public sealed class ProcessTests
             environment = new Dictionary<string, string?> { ["PROBE_VALUE"] = "prefix:${env:SOURCE_VALUE}", ["PROBE_REMOVE"] = null },
         });
         Directory.CreateDirectory(Path.Combine(files.Directory, "work"));
+        string markerName = "cwd-" + Guid.NewGuid().ToString("N");
+        string markerValue = Guid.NewGuid().ToString("N");
+        files.Write(Path.Combine("work", markerName), markerValue);
         var result = await files.Run(["--mhx-config", config], new() { ["SOURCE_VALUE"] = "secret", ["PROBE_REMOVE"] = "remove-me" });
         Assert.Equal(23, result.Exit);
         using JsonDocument report = JsonDocument.Parse(result.Error);
         Assert.Equal("prefix:secret", report.RootElement.GetProperty("value").GetString());
         Assert.Equal(JsonValueKind.Null, report.RootElement.GetProperty("removed").ValueKind);
-        Assert.Equal(Path.Combine(files.Directory, "work"), report.RootElement.GetProperty("cwd").GetString());
+        Assert.Equal(markerValue, File.ReadAllText(Path.Combine(report.RootElement.GetProperty("cwd").GetString()!, markerName)));
     }
 
     [Fact]
@@ -294,8 +297,8 @@ public sealed class ProcessTests
         {
             if (!launcher.HasExited) launcher.Kill(true);
             launcher.WaitForExit();
-            if (child is not null) { if (!child.HasExited) child.Kill(true); child.Dispose(); }
-            if (grandchild is not null) { if (!grandchild.HasExited) grandchild.Kill(true); grandchild.Dispose(); }
+            if (child is not null) { if (!child.HasExited) child.Kill(true); child.WaitForExit(); child.Dispose(); }
+            if (grandchild is not null) { if (!grandchild.HasExited) grandchild.Kill(true); grandchild.WaitForExit(); grandchild.Dispose(); }
         }
     }
 }
