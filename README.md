@@ -69,7 +69,7 @@ The package requires a .NET 11 runtime; installing it requires SDK 11 or later.
 Without a profile, MHX invokes the newest installed .NET SDK (11+) using:
 
 ```text
-dotnet exec <sdk>/dotnet.dll tool exec --source https://www.nuget.org/api/v2/ <your arguments>
+dotnet exec <sdk>/dotnet.dll tool exec --verbosity quiet --source https://www.nuget.org/api/v2/ <your arguments>
 ```
 
 This follows modern `dnx` SDK selection independently of `global.json` while
@@ -82,6 +82,11 @@ Use `Package@Version` to request an explicit version.
 MHX supplies `DOTNET_NOLOGO=1` and `DOTNET_CLI_TELEMETRY_OPTOUT=1` to its .NET
 backend when those variables are not already set. Explicit existing values win.
 The SDK and the executed tool still control their own behavior.
+
+SDK logging defaults to `quiet` to keep informational restore messages out of
+MCP stdout. An explicit SDK `-v`/`--verbosity` option before `--` overrides this
+default. Options after `--` belong to the executed tool. Increasing SDK verbosity
+can introduce non-protocol output, so use the quiet default for MCP servers.
 
 ## Profiles
 

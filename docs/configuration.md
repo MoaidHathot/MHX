@@ -45,6 +45,11 @@ Everything following the selected profile/name is passed to the target.
 `sources` is absent, sources come from that file; the v2 default is not added.
 Explicit source arguments from the caller also reach the SDK and follow its rules.
 
+The .NET backend defaults SDK verbosity to `quiet` for clean MCP stdout. Explicit
+SDK verbosity options before `--` take precedence; verbosity arguments after
+`--` only affect the child tool. Logging verbosity does not change NuGet signature
+verification or trust settings.
+
 Paths in configuration are relative to the **configuration directory**, not
 the caller's directory. Bare executables are searched only in absolute entries
 of the effective child PATH. Windows searches `.exe` and `.com`, not PATHEXT

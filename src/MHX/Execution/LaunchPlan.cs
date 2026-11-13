@@ -52,6 +52,9 @@ internal static class PlanBuilder
             RejectSelf(executable, launcher);
             string sdk = DotnetSdk.Find(executable, environment);
             List<string> prefix = ["exec", sdk, "tool", "exec"];
+            // SDK informational messages can otherwise precede MCP JSON on
+            // stdout (notably signature-verification notices on macOS).
+            if (!HasSdkVerbosity(arguments)) prefix.AddRange(["--verbosity", "quiet"]);
             if (profile.NugetConfig is not null)
             {
                 string path = Path.GetFullPath(expansion.Expand(profile.NugetConfig), baseDirectory);
@@ -81,5 +84,19 @@ internal static class PlanBuilder
     {
         if (Path.GetFullPath(executable).Equals(launcher.Path, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
             throw new MhxException("A launcher cannot directly launch itself.");
+    }
+
+    private static bool HasSdkVerbosity(IEnumerable<string> arguments)
+    {
+        foreach (string argument in arguments)
+        {
+            if (argument == "--") break;
+            if (argument is "-v" or "--verbosity" ||
+                argument.StartsWith("-v:", StringComparison.Ordinal) ||
+                argument.StartsWith("-v=", StringComparison.Ordinal) ||
+                argument.StartsWith("--verbosity:", StringComparison.Ordinal) ||
+                argument.StartsWith("--verbosity=", StringComparison.Ordinal)) return true;
+        }
+        return false;
     }
 }

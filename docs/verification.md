@@ -6,8 +6,8 @@ unexecuted CI jobs.
 
 ## Passed
 
-- 46 tests against the ordinary Release build.
-- The same 46 tests against the published single-file executable.
+- 51 tests against the ordinary Release build.
+- The same 51 tests against the published single-file executable.
 - Packaging checks reject platform apphosts and PDBs in the portable tool package.
 - Package runtime metadata explicitly verifies `net11.0` and runtime major 11,
   preventing a stale .NET 10 package from satisfying the installation checks.
@@ -38,7 +38,9 @@ duplicate fields, discovery boundaries, source URI normalization, environment
 allowlisting/removal, SDK discovery failures/output limits, recursion, randomized
 native argument forwarding, streaming before EOF, binary data, aliases, Windows
 32-bit exit codes, explicit command interpreters, and forced termination of both
-the target process tree and an in-progress SDK-discovery subprocess.
+the target process tree and an in-progress SDK-discovery subprocess. SDK logging
+defaults to quiet for MCP stdout, with tests for explicit verbosity overrides
+and the separation between SDK options and child-tool arguments.
 
 ## Size and startup observations
 
@@ -47,7 +49,7 @@ Current .NET 11 artifacts:
 | Artifact | Bytes |
 |---|---:|
 | Default win-x64 single-file executable | 146,577 |
-| Portable NuGet tool package | 35,367 |
+| Portable NuGet tool package | 35,686 |
 
 ### Historical .NET 10 startup comparison
 

@@ -145,7 +145,7 @@ public sealed class ProcessTests
         });
         Assert.Equal(23, result.Exit);
         using JsonDocument report = JsonDocument.Parse(result.Error);
-        Assert.Equal(["exec", sdk, "tool", "exec", "--source", "https://www.nuget.org/api/v2/", "Package@1.2.3", "--", "mcp"],
+        Assert.Equal(["exec", sdk, "tool", "exec", "--verbosity", "quiet", "--source", "https://www.nuget.org/api/v2/", "Package@1.2.3", "--", "mcp"],
             report.RootElement.GetProperty("args").EnumerateArray().Select(x => x.GetString()));
         Assert.Equal("1", report.RootElement.GetProperty("telemetry").GetString());
     }
@@ -166,9 +166,44 @@ public sealed class ProcessTests
             new() { ["PROBE_SDK_LIST"] = $"11.0.100 [{Path.Combine(files.Directory, "sdk")}]" });
         Assert.Equal(23, result.Exit);
         using JsonDocument report = JsonDocument.Parse(result.Error);
-        Assert.Equal(["exec", sdk, "tool", "exec", "--configfile", nuget, "--source", feed,
+        Assert.Equal(["exec", sdk, "tool", "exec", "--verbosity", "quiet", "--configfile", nuget, "--source", feed,
                 "--source", Path.Combine(files.Directory, "relative-feed"), "Package"],
             report.RootElement.GetProperty("args").EnumerateArray().Select(x => x.GetString()));
+    }
+
+    [Theory]
+    [InlineData("-v")]
+    [InlineData("--verbosity")]
+    [InlineData("-v:diagnostic")]
+    [InlineData("--verbosity=diagnostic")]
+    public async Task ExplicitSdkVerbosityOverridesQuietDefault(string option)
+    {
+        using TestFiles files = new();
+        files.Write("sdk/11.0.100/dotnet.dll", "fixture");
+        string config = files.Profile(new { kind = "dotnet-tool", dotnet = TestFiles.Probe });
+        string[] verbosity = option is "-v" or "--verbosity" ? [option, "diagnostic"] : [option];
+        var result = await files.Run(["--mhx-config", config, .. verbosity, "Package", "--", "mcp"],
+            new() { ["PROBE_SDK_LIST"] = $"11.0.100 [{Path.Combine(files.Directory, "sdk")}]" });
+        Assert.Equal(23, result.Exit);
+        using JsonDocument report = JsonDocument.Parse(result.Error);
+        string[] actual = report.RootElement.GetProperty("args").EnumerateArray().Select(x => x.GetString()!).ToArray();
+        Assert.DoesNotContain("quiet", actual);
+        Assert.Equal(verbosity.Concat(["Package", "--", "mcp"]), actual[6..]);
+    }
+
+    [Fact]
+    public async Task ToolVerbosityAfterSeparatorDoesNotChangeSdkVerbosity()
+    {
+        using TestFiles files = new();
+        files.Write("sdk/11.0.100/dotnet.dll", "fixture");
+        string config = files.Profile(new { kind = "dotnet-tool", dotnet = TestFiles.Probe });
+        var result = await files.Run(["--mhx-config", config, "Package", "--", "--verbosity", "normal"],
+            new() { ["PROBE_SDK_LIST"] = $"11.0.100 [{Path.Combine(files.Directory, "sdk")}]" });
+        Assert.Equal(23, result.Exit);
+        using JsonDocument report = JsonDocument.Parse(result.Error);
+        string[] actual = report.RootElement.GetProperty("args").EnumerateArray().Select(x => x.GetString()!).ToArray();
+        Assert.Equal(["--verbosity", "quiet"], actual[4..6]);
+        Assert.Equal(["Package", "--", "--verbosity", "normal"], actual[8..]);
     }
 
     [Fact]
