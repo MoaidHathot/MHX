@@ -1,0 +1,61 @@
+name: build-and-verify
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      DOTNET_NOLOGO: '1'
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      TESTINGPLATFORM_TELEMETRY_OPTOUT: '1'
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: '11.0.x'
+      - name: Build and test
+        run: dotnet test MHX.slnx -c Release
+      - name: Publish both distribution formats
+        run: ./scripts/Publish.ps1
+      - name: Validate Windows registration script without changing the environment
+        if: runner.os == 'Windows'
+        run: ./scripts/Register-Mhx.ps1 -BinDirectory ./artifacts/publish/win-x64 -ProfileDirectory ./examples -WhatIf
+      - name: Verify published binary and installed package
+        run: |
+          ./scripts/Verify-Packages.ps1
+          $os = if ($IsWindows) { 'win' } elseif ($IsLinux) { 'linux' } else { 'osx' }
+          $arch = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()
+          $ext = if ($IsWindows) { '.exe' } else { '' }
+          $env:MHX_TEST_EXE = (Resolve-Path "artifacts/publish/$os-$arch/mhx$ext").Path
+          dotnet test MHX.slnx -c Release --no-restore
+      - name: Publish and verify Native AOT
+        run: |
+          ./scripts/Publish.ps1 -NativeAot
+          $os = if ($IsWindows) { 'win' } elseif ($IsLinux) { 'linux' } else { 'osx' }
+          $arch = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()
+          $ext = if ($IsWindows) { '.exe' } else { '' }
+          $env:MHX_TEST_EXE = (Resolve-Path "artifacts/publish/$os-$arch-aot/mhx$ext").Path
+          ./scripts/Verify-Packages.ps1 -Executable $env:MHX_TEST_EXE
+          dotnet test MHX.slnx -c Release --no-restore
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: mhx-${{ matrix.os }}
+          path: |
+            artifacts/publish/
+            artifacts/packages/
+          if-no-files-found: error
