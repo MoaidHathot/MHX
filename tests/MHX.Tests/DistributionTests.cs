@@ -139,7 +139,7 @@ public sealed class DistributionTests
         using TestFiles files = new();
         string bin = Path.Combine(files.Directory, "tools");
         string exe = Path.Combine(bin, OperatingSystem.IsWindows() ? "mhx.exe" : "mhx");
-        Assert.Equal(bin, Installation.ToolDirectory(exe, Path.Combine(bin, ".store", "mhx", "0.2.0", "tools")));
+        Assert.Equal(Installation.PhysicalDirectory(bin), Installation.ToolDirectory(exe, Path.Combine(bin, ".store", "mhx", "0.2.0", "tools")));
         Assert.Null(Installation.ToolDirectory(exe, Path.Combine(files.Directory, "nuget", "mhx", "tools")));
     }
 
@@ -153,6 +153,9 @@ public sealed class DistributionTests
         string alias = Path.Combine(files.Directory, "alias");
         Directory.CreateSymbolicLink(alias, real);
         Assert.Equal(Installation.PhysicalDirectory(nested), Installation.PhysicalDirectory(Path.Combine(alias, "nested")));
+        string indirect = Path.Combine(files.Directory, "indirect");
+        Directory.CreateSymbolicLink(indirect, Path.Combine(alias, "nested"));
+        Assert.Equal(Installation.PhysicalDirectory(nested), Installation.PhysicalDirectory(indirect));
     }
 
     [Fact]

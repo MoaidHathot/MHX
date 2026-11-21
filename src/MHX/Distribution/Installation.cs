@@ -36,14 +36,20 @@ internal static class Installation
             ? directory : null;
     }
 
-    internal static string PhysicalDirectory(string path)
+    internal static string PhysicalDirectory(string path) => PhysicalDirectory(path, 0);
+
+    private static string PhysicalDirectory(string path, int depth)
     {
+        if (depth > 40) throw new MhxException("Too many directory links in the installation path.");
         string full = Path.GetFullPath(path);
         string current = Path.GetPathRoot(full)!;
         foreach (string part in full[current.Length..].Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries))
         {
             DirectoryInfo directory = new(Path.Combine(current, part));
-            current = directory.Exists ? directory.ResolveLinkTarget(true)?.FullName ?? directory.FullName : directory.FullName;
+            FileSystemInfo? target = directory.Exists ? directory.ResolveLinkTarget(true) : null;
+            // A link can point back through another aliased ancestor, e.g.
+            // /private/var/.../alias -> /var/.../real on macOS.
+            current = target is null ? directory.FullName : PhysicalDirectory(target.FullName, depth + 1);
         }
         return Path.TrimEndingDirectorySeparator(current);
     }
