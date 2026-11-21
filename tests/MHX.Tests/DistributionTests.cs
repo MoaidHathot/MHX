@@ -10,6 +10,7 @@ namespace MHX.Tests;
 public sealed class DistributionTests
 {
     public static bool WindowsOnly => OperatingSystem.IsWindows();
+    public static bool UnixOnly => !OperatingSystem.IsWindows();
     private static CancellationToken Token => TestContext.Current.CancellationToken;
     private static string Hash(byte[] bytes) => Convert.ToHexStringLower(SHA256.HashData(bytes));
 
@@ -140,6 +141,18 @@ public sealed class DistributionTests
         string exe = Path.Combine(bin, OperatingSystem.IsWindows() ? "mhx.exe" : "mhx");
         Assert.Equal(bin, Installation.ToolDirectory(exe, Path.Combine(bin, ".store", "mhx", "0.2.0", "tools")));
         Assert.Null(Installation.ToolDirectory(exe, Path.Combine(files.Directory, "nuget", "mhx", "tools")));
+    }
+
+    [Fact(SkipUnless = nameof(UnixOnly), Skip = "Unix directory symlink identity")]
+    public void PhysicalDirectoriesResolveAncestorSymlinks()
+    {
+        using TestFiles files = new();
+        string real = Path.Combine(files.Directory, "real");
+        string nested = Path.Combine(real, "nested");
+        Directory.CreateDirectory(nested);
+        string alias = Path.Combine(files.Directory, "alias");
+        Directory.CreateSymbolicLink(alias, real);
+        Assert.Equal(Installation.PhysicalDirectory(nested), Installation.PhysicalDirectory(Path.Combine(alias, "nested")));
     }
 
     [Fact]

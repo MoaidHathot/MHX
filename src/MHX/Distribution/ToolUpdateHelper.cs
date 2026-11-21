@@ -10,7 +10,7 @@ internal static class ToolUpdateHelper
         requestPath = Path.GetFullPath(requestPath);
         string directory = Path.GetDirectoryName(requestPath)!;
         StringComparison comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-        if (!directory.Equals(Path.GetFullPath(AppContext.BaseDirectory).TrimEnd(Path.DirectorySeparatorChar), comparison) ||
+        if (!Installation.PhysicalDirectory(directory).Equals(Installation.PhysicalDirectory(AppContext.BaseDirectory), comparison) ||
             !File.Exists(Path.Combine(directory, ".mhx-tool-update")))
             throw new MhxException("The update helper must run from its own staged update directory.");
         string status = Path.Combine(directory, "status.json");

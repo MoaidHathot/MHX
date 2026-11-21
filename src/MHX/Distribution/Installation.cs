@@ -28,12 +28,24 @@ internal static class Installation
     {
         // A tool apphost lives beside .store, whereas dotnet/dnx/local-manifest
         // execution has no installation-owned apphost to update.
-        string directory = Path.GetDirectoryName(Path.GetFullPath(executable))!;
+        string directory = PhysicalDirectory(Path.GetDirectoryName(Path.GetFullPath(executable))!);
         string store = Path.Combine(directory, ".store") + Path.DirectorySeparatorChar;
-        string assemblyDirectory = Path.GetFullPath(baseDirectory);
+        string assemblyDirectory = PhysicalDirectory(baseDirectory);
         StringComparison comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         return Path.GetFileNameWithoutExtension(executable).Equals("mhx", comparison) && assemblyDirectory.StartsWith(store, comparison)
             ? directory : null;
+    }
+
+    internal static string PhysicalDirectory(string path)
+    {
+        string full = Path.GetFullPath(path);
+        string current = Path.GetPathRoot(full)!;
+        foreach (string part in full[current.Length..].Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries))
+        {
+            DirectoryInfo directory = new(Path.Combine(current, part));
+            current = directory.Exists ? directory.ResolveLinkTarget(true)?.FullName ?? directory.FullName : directory.FullName;
+        }
+        return Path.TrimEndingDirectorySeparator(current);
     }
 
     public static void Register(string bin, string? profileDirectory)

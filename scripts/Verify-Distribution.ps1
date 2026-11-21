@@ -90,7 +90,8 @@ try {
     $stderr = $helper.StandardError.ReadToEndAsync()
     $deadline = [DateTime]::UtcNow.AddSeconds(20)
     while (-not (Test-Path (Join-Path $staging '.waiting-for-parent'))) {
-        if ($helper.HasExited -or [DateTime]::UtcNow -ge $deadline) { throw 'Tool updater did not reach the parent-exit handoff.' }
+        if ($helper.HasExited) { throw "Tool updater did not reach the parent-exit handoff: $($stderr.GetAwaiter().GetResult()) $($stdout.GetAwaiter().GetResult())" }
+        if ([DateTime]::UtcNow -ge $deadline) { throw 'Tool updater did not reach the parent-exit handoff before the deadline.' }
         Start-Sleep -Milliseconds 20
     }
     if ($helper.HasExited) { throw 'Updater must wait for the running tool to exit.' }
