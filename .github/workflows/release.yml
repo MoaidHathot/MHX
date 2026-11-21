@@ -26,8 +26,6 @@ jobs:
   build:
     needs: validate
     uses: ./.github/workflows/ci.yml
-    with:
-      release_assets: true
   publish:
     needs: build
     runs-on: ubuntu-latest

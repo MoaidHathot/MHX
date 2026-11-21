@@ -6,10 +6,6 @@ on:
   pull_request:
   workflow_dispatch:
   workflow_call:
-    inputs:
-      release_assets:
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -65,7 +61,6 @@ jobs:
           $ext = if ($IsWindows) { '.exe' } else { '' }
           ./scripts/Verify-Distribution.ps1 -Executable (Resolve-Path "artifacts/publish/$os-$arch-aot/mhx$ext").Path
       - name: Prepare versioned release assets
-        if: inputs.release_assets
         run: |
           $os = if ($IsWindows) { 'win' } elseif ($IsLinux) { 'linux' } else { 'osx' }
           $arch = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()
