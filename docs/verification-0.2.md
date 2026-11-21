@@ -1,4 +1,4 @@
-# Release/update verification: 0.2.0
+# Release/update verification: 0.2.x
 
 The update extension targets .NET 11. It selects latest stable releases, with no
 user version pin. Installed-version records exist only for integrity and downgrade
@@ -56,6 +56,19 @@ Against the actual private release, local checks also passed:
 - a real `0.1.99` .NET-tool test installation using `mhx update` to download the
   published package, hand off after exit, and finish as `0.2.0` with a completed
   status record. The synthetic older version was only a local test fixture.
+
+### 0.2.1 patch verification
+
+[`v0.2.1`](https://github.com/MoaidHathot/MHX/releases/tag/v0.2.1) adds a PATH
+precedence regression test, for 75 total tests with OS-specific skips. It puts
+the selected installation first in user PATH without removing other installations.
+[Release workflow 44914270606](https://github.com/MoaidHathot/MHX/actions/runs/44914270606)
+passed all Windows/Linux/macOS and Native AOT checks and published the release.
+
+Both previously installed release `0.2.0` distributions then successfully ran
+`mhx update` against the real private GitHub release and finished as `0.2.1`:
+the native executable replaced itself, and the .NET-tool handoff completed with
+a successful status record. This exercised an actual release-to-release upgrade.
 
 GitHub releases are private because the repository is private; use GitHub
 authentication when installing/updating. NuGet.org publication requires the
