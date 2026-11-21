@@ -1,0 +1,102 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Check stable version/tag agreement
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+        run: |
+          $version = ([xml](Get-Content Directory.Build.props -Raw)).Project.PropertyGroup.Version
+          if ($env:REF_TYPE -ne 'tag' -or $env:RELEASE_TAG -cnotmatch '^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$' -or $env:RELEASE_TAG -cne "v$version") {
+            throw 'Run releases from a stable tag matching Directory.Build.props.'
+          }
+  build:
+    needs: validate
+    uses: ./.github/workflows/ci.yml
+    with:
+      release_assets: true
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          pattern: mhx-*
+          path: artifacts/downloaded
+      - name: Assemble verified assets
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: ./scripts/Assemble-Release.ps1 -InputDirectory artifacts/downloaded -Tag $env:RELEASE_TAG
+      - name: Upload draft and publish complete release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          $existing = gh release view $env:RELEASE_TAG --json isDraft 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            if (-not ($existing | ConvertFrom-Json).isDraft) {
+              Write-Host 'Release already published; preserving existing assets.'
+              exit 0
+            }
+          } else {
+            gh release create $env:RELEASE_TAG --draft --verify-tag --title "MHX $env:RELEASE_TAG" --notes-file artifacts/release-notes.md
+            if ($LASTEXITCODE -ne 0) { throw 'Could not create draft release.' }
+          }
+          $assets = @(Get-ChildItem artifacts/release-final -File | Select-Object -ExpandProperty FullName)
+          gh release upload $env:RELEASE_TAG @assets --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Release asset upload failed; draft retained.' }
+          gh release edit $env:RELEASE_TAG --draft=false --latest
+          if ($LASTEXITCODE -ne 0) { throw 'Could not publish release.' }
+  nuget:
+    needs: publish
+    if: vars.NUGET_USER != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: '11.0.x'
+      - name: Download canonical release package
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          $name = "MHX.$($env:RELEASE_TAG.Substring(1)).nupkg"
+          gh release download $env:RELEASE_TAG --pattern $name --pattern mhx-release.json --dir package
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot download canonical package.' }
+          $manifest = Get-Content package/mhx-release.json -Raw | ConvertFrom-Json
+          $entries = @($manifest.files | Where-Object { $_.name -ceq $name -and $_.kind -ceq 'dotnet-tool' })
+          if ($entries.Count -ne 1 -or (Get-FileHash "package/$name" -Algorithm SHA256).Hash -ine $entries[0].sha256) { throw 'Canonical package checksum mismatch.' }
+      - name: Obtain short-lived NuGet credential
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
+        id: login
+        with:
+          user: ${{ vars.NUGET_USER }}
+      - name: Publish NuGet package
+        env:
+          NUGET_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+          DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+        run: dotnet nuget push package/*.nupkg --api-key "$NUGET_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate

@@ -2,8 +2,14 @@ name: build-and-verify
 
 on:
   push:
+    branches: ['**']
   pull_request:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      release_assets:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -52,10 +58,23 @@ jobs:
           $env:MHX_TEST_EXE = (Resolve-Path "artifacts/publish/$os-$arch-aot/mhx$ext").Path
           ./scripts/Verify-Packages.ps1 -Executable $env:MHX_TEST_EXE
           dotnet test MHX.slnx -c Release --no-restore
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - name: Verify installer and update handoff
+        run: |
+          $os = if ($IsWindows) { 'win' } elseif ($IsLinux) { 'linux' } else { 'osx' }
+          $arch = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()
+          $ext = if ($IsWindows) { '.exe' } else { '' }
+          ./scripts/Verify-Distribution.ps1 -Executable (Resolve-Path "artifacts/publish/$os-$arch-aot/mhx$ext").Path
+      - name: Prepare versioned release assets
+        if: inputs.release_assets
+        run: |
+          $os = if ($IsWindows) { 'win' } elseif ($IsLinux) { 'linux' } else { 'osx' }
+          $arch = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()
+          ./scripts/New-ReleaseAssets.ps1 -Runtime "$os-$arch"
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: mhx-${{ matrix.os }}
           path: |
             artifacts/publish/
             artifacts/packages/
+            artifacts/release/
           if-no-files-found: error

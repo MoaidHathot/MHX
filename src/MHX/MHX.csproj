@@ -7,6 +7,7 @@
     <IsAotCompatible>true</IsAotCompatible>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
     <PackAsTool>true</PackAsTool>
+    <DefineConstants Condition="'$(PackAsTool)' == 'true'">$(DefineConstants);MHX_TOOL</DefineConstants>
     <ToolCommandName>mhx</ToolCommandName>
     <PackageId>MHX</PackageId>
     <Description>A small configurable process launcher with NuGet v2 .NET tool execution.</Description>
@@ -16,6 +17,7 @@
     <PackageTags>cli;shim;launcher;dotnet-tool;nuget;mcp</PackageTags>
     <OptimizationPreference>Size</OptimizationPreference>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <Http3Support>false</Http3Support>
     <UseSystemResourceKeys Condition="'$(PublishAot)' == 'true'">true</UseSystemResourceKeys>
     <StripSymbols>true</StripSymbols>
     <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>

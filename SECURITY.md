@@ -28,10 +28,17 @@ does. Use `Package@Version` when a repository should not select the tool version
 
 ## Privacy
 
-MHX has no network client, telemetry, application log files, usage history, or
-automatic update checks. Its own errors omit resolved arguments and environment
+Ordinary MHX launches make no network requests or update checks of their own.
+Explicit install/update commands contact the fixed MHX GitHub repository over
+HTTPS and verify release metadata, asset sizes, and SHA-256 before installation.
+There is no telemetry, usage history, or background updater. Errors omit resolved arguments and environment
 values. Successful launches emit nothing. SDK discovery captures diagnostics
 without echoing them; target stdout/stderr are passed through unchanged.
+
+GitHub credentials come from environment variables or the local GitHub CLI,
+remain in memory, and are attached only to GitHub API requests. They are not
+forwarded to asset CDN hosts or to the .NET-tool update helper. Installation
+state contains versions/hashes, recovery paths, and update status, not secrets.
 
 The .NET backend defaults to disabling SDK telemetry in the child environment
 when the caller has not explicitly set `DOTNET_CLI_TELEMETRY_OPTOUT`. No global

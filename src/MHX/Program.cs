@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using MHX.Configuration;
 using MHX.Execution;
+using MHX.Distribution;
 
 namespace MHX;
 
@@ -10,9 +11,14 @@ internal static class Program
     {
         try
         {
+            if (args is ["--mhx-complete-tool-update", string request]) return ToolUpdateHelper.Run(request);
+            if (args.Length > 0 && args[0] == "--mhx-install") return Management.Install(args[1..]);
+            if (args.Length > 0 && (args[0] == "--mhx-update" ||
+                (args[0] == "update" && LauncherLocation.Current().Name.Equals("mhx", StringComparison.OrdinalIgnoreCase))))
+                return Management.Update(args[1..]);
             if (args is ["--mhx-version"])
             {
-                Console.WriteLine(typeof(Program).Assembly.GetName().Version?.ToString(3));
+                Console.WriteLine(AppInfo.Version);
                 return 0;
             }
             if (args is ["--mhx-help"]) return Help();
@@ -54,6 +60,7 @@ internal static class Program
             mhx Package[@Version] -- tool-arguments
             mhx --mhx-config path/to/profile.mhx [arguments...]
             mhx --mhx-profile name [arguments...]
+            mhx update [--check]
             mhx --mhx-help
             mhx --mhx-version
 

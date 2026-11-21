@@ -18,7 +18,54 @@ wrappers are unnecessary, including for MCP stdio clients:
 
 ## Install / distribute
 
-### Dotfiles executable
+### Latest release (recommended)
+
+Keep `scripts/Install-Mhx.ps1` in your dotfiles and run it during machine setup:
+
+```powershell
+./scripts/Install-Mhx.ps1 -ProfileDirectory "$env:Moaid_Config_Path/config/mhx"
+```
+
+The installer downloads the **latest stable Native AOT release**, verifies its
+SHA-256 and size, and installs it into the per-user MHX binary directory. There
+is no launcher version pin. On Windows it registers user PATH and `MHX_HOME`;
+restart existing terminals/background harnesses afterward. On Unix it prints
+the PATH/profile-home entries to add to your application environment.
+
+The repository is currently private. Downloads use `GH_TOKEN` / `GITHUB_TOKEN`,
+or an existing `gh auth login` session. Tokens are never written into profiles,
+installation metadata, or update requests. Public releases also work anonymously.
+
+```powershell
+mhx update --check
+mhx update
+```
+
+Updates are explicit. Ordinary `mhx Package -- arguments` invocations make no
+update checks. The native executable is replaced transactionally, preserving
+profiles and allowing already-running instances to finish on their old image.
+Copied executable aliases can be updated individually with `--mhx-update`.
+
+For the .NET-tool installation channel, the same bootstrap can install the
+release's verified NuGet package using the SDK:
+
+```powershell
+./scripts/Install-Mhx.ps1 -Method dotnet-tool -ProfileDirectory "$env:Moaid_Config_Path/config/mhx"
+```
+
+`mhx update` also supports installed global/custom-path .NET tools. Windows
+cannot remove the currently loaded package, so MHX hands the update to a staged
+helper after exiting. Exit 0 at handoff means **scheduled**, and the helper
+prints the final outcome and writes the displayed `status.json`. Close other
+instances of that .NET-tool installation if the SDK reports files in use.
+Local-manifest and ephemeral `dnx` installations should use their SDK update
+commands rather than changing another installation.
+
+Native AOT removes the runtime dependency for MHX itself. The `dotnet-tool`
+execution backend still requires SDK 11+. The NuGet distribution requires a
+.NET 11 runtime. See [release and update design](docs/releases.md).
+
+### Build a dotfiles executable yourself
 
 Build with the .NET 11 SDK and PowerShell 7:
 
@@ -44,8 +91,9 @@ Register your dotfiles location once on Windows:
 
 This adds the binary directory to **user PATH** and sets **MHX_HOME** at user
 scope. Restart existing terminals/background harnesses after registration.
-The executable and profiles can then be updated through your normal dotfiles
-workflow. Stop running launchers before replacing a Windows executable.
+Profiles can then be updated through your normal dotfiles workflow. The release
+installer and `mhx update` manage executable updates without tracking binaries
+in Git. Stop running launchers before manually overwriting Windows executables.
 On Linux/macOS, add the directory to the environment of the applications that
 launch MHX and set `MHX_HOME` there; ensure `mhx` has execute permission.
 
@@ -55,7 +103,7 @@ The same publish script builds `artifacts/packages/MHX.<version>.nupkg`.
 Install from this local directory (no public feed is needed):
 
 ```powershell
-dotnet tool install --global MHX --source ./artifacts/packages --version 0.1.0
+dotnet tool install --global MHX --source ./artifacts/packages --version 0.2.0
 ```
 
 The SDK generates `mhx.exe` in `%USERPROFILE%/.dotnet/tools` (or `mhx` in
@@ -137,6 +185,7 @@ dotnet build MHX.slnx -c Release
 dotnet test MHX.slnx -c Release
 ./scripts/Publish.ps1
 ./scripts/Verify-Packages.ps1
+./scripts/Verify-Distribution.ps1 -Executable ./artifacts/publish/win-x64/mhx.exe
 ```
 
 For an explicit network smoke test using a tool you select, append, for example,
@@ -155,5 +204,5 @@ single-file and Native AOT publishes. Local Windows results do not imply that
 the other platforms or the Native AOT compiler were available on that machine.
 
 MHX has no third-party runtime package dependencies. Test dependencies are
-separate. No telemetry, updater, daemon, or persistent application logs are
-implemented by MHX.
+separate. There is no telemetry or background daemon. Network access for MHX's
+own releases occurs only during explicit installation/update commands.

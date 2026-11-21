@@ -29,9 +29,15 @@ aliases extend that same contract to other commands.
   reported by the host, matching modern `dnx` selection. No ambient `global.json`
   can downgrade the backend below SDK 11. Discovery is bounded by a timeout;
   Windows discovery also uses the supervised native execution path and bounded output.
-- No HTTP client, package downloader, plugin loader, dynamic compilation, updater,
-  persistent cache, or telemetry is part of MHX. New backends should produce a
+- The execution path has no HTTP client, package downloader, plugin loader,
+  dynamic compilation, or telemetry. Explicit release installation/update has a
+  separate bounded GitHub client and transactional installation state. New execution backends should produce a
   `LaunchPlan`, retaining the shared argv/stdio/security contract.
+
+The release/update extension is described in [releases.md](releases.md). Windows
+experiments confirmed that a mapped native executable can be renamed/replaced,
+while an installed .NET tool cannot uninstall its own loaded package. The latter
+therefore uses an explicit parent-exit handoff rather than modifying SDK stores.
 - Windows process creation specifies the executable separately from its quoted
   argv and restricts inherited handles to stdin/stdout/stderr. A JOB_LIST creation
   attribute associates the process atomically with a kill-on-close job. This avoids

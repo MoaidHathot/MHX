@@ -20,6 +20,8 @@ fail rather than falling back to defaults. A symlink does not necessarily keep
 its alias name on every OS; copy the single-file executable for named launchers.
 
 `--mhx-help` and `--mhx-version` are reserved standalone management invocations.
+`mhx update [--check]` and `--mhx-update [--check]` manage MHX's own release.
+An ordinary `update` on a renamed alias is still forwarded to that alias's target.
 `--mhx-config` and `--mhx-profile` are recognized only as the first argument.
 Everything following the selected profile/name is passed to the target.
 `mhx` and `mhx --help` show help when no configuration has been selected.
