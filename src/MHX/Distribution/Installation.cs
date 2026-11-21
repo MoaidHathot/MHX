@@ -60,9 +60,7 @@ internal static class Installation
         if (OperatingSystem.IsWindows())
         {
             string old = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.User) ?? "";
-            List<string> entries = old.Split(';', StringSplitOptions.RemoveEmptyEntries).ToList();
-            if (!entries.Any(p => p.TrimEnd('\\', '/').Equals(bin.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase))) entries.Add(bin);
-            Environment.SetEnvironmentVariable("PATH", string.Join(';', entries), EnvironmentVariableTarget.User);
+            Environment.SetEnvironmentVariable("PATH", PreferredUserPath(old, bin), EnvironmentVariableTarget.User);
             if (profileDirectory is not null) Environment.SetEnvironmentVariable("MHX_HOME", profileDirectory, EnvironmentVariableTarget.User);
             Console.Error.WriteLine("Restart existing terminals and background harnesses to inherit the registered PATH.");
         }
@@ -71,6 +69,13 @@ internal static class Installation
             Console.Error.WriteLine("Add this directory to the PATH of your terminal and GUI applications: " + bin);
             if (profileDirectory is not null) Console.Error.WriteLine("Set MHX_HOME to: " + profileDirectory);
         }
+    }
+
+    internal static string PreferredUserPath(string old, string bin)
+    {
+        IEnumerable<string> others = old.Split(';', StringSplitOptions.RemoveEmptyEntries)
+            .Where(p => !p.TrimEnd('\\', '/').Equals(bin.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase));
+        return string.Join(';', new[] { bin }.Concat(others));
     }
 
     public static int InstallNative(string source, string directory, string? profileDirectory, bool register)

@@ -170,6 +170,14 @@ public sealed class DistributionTests
     }
 
     [Fact]
+    public void RegistrationPrioritizesSelectedInstallationWithoutDuplicatingIt()
+    {
+        string path = Installation.PreferredUserPath(@"C:\old-tools;C:\mhx\bin\;C:\other", @"C:\MHX\bin");
+        Assert.Equal(@"C:\MHX\bin;C:\old-tools;C:\other", path);
+        Assert.Equal(path, Installation.PreferredUserPath(path, @"C:\MHX\bin"));
+    }
+
+    [Fact]
     public void HelperRejectsForeignRequestWithoutDeletingAnything()
     {
         using TestFiles files = new();

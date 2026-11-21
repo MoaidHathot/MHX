@@ -38,6 +38,11 @@ The .NET-tool method defaults to `~/.dotnet/tools`. Registration is per-user;
 Unix shells/GUI applications must receive the printed PATH and `MHX_HOME`
 settings through their existing environment setup.
 
+Windows registration puts the selected installation first in **user** PATH,
+without deleting other installations. A system-wide PATH entry can still take
+precedence; remove an unwanted system-wide installation or adjust that environment
+explicitly when switching channels.
+
 The script downloads the AOT installer executable, verifies bytes against the
 release manifest, then invokes its `--mhx-install` entry point. Native file
 replacement is implemented once in MHX. The .NET-tool method downloads the

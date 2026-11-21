@@ -41,6 +41,22 @@ benchmark or a guarantee about other machines.
 
 ## Publication boundary
 
+[`v0.2.0`](https://github.com/MoaidHathot/MHX/releases/tag/v0.2.0) was published by
+[release workflow 44913137716](https://github.com/MoaidHathot/MHX/actions/runs/44913137716)
+after all Windows/Linux/macOS builds, tests, installer checks, and asset assembly
+passed. The final suite contains 74 tests with OS-specific skips.
+
+Against the actual private release, local checks also passed:
+
+- latest-stable Native AOT installation using GitHub CLI authentication;
+- latest-stable .NET-tool installation from the release's verified `.nupkg`;
+- `mhx update --check` and the already-up-to-date path for both installations;
+- a standalone `0.1.99` test build updating itself to the released AOT `0.2.0`
+  while its old executable was loaded;
+- a real `0.1.99` .NET-tool test installation using `mhx update` to download the
+  published package, hand off after exit, and finish as `0.2.0` with a completed
+  status record. The synthetic older version was only a local test fixture.
+
 GitHub releases are private because the repository is private; use GitHub
 authentication when installing/updating. NuGet.org publication requires the
 owner to configure its Trusted Publishing policy and `NUGET_USER`. The GitHub

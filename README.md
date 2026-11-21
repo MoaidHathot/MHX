@@ -20,6 +20,8 @@ wrappers are unnecessary, including for MCP stdio clients:
 
 ### Latest release (recommended)
 
+Download binaries and the bootstrap from the [latest GitHub Release](https://github.com/MoaidHathot/MHX/releases/latest).
+
 Keep `scripts/Install-Mhx.ps1` in your dotfiles and run it during machine setup:
 
 ```powershell
@@ -103,7 +105,7 @@ The same publish script builds `artifacts/packages/MHX.<version>.nupkg`.
 Install from this local directory (no public feed is needed):
 
 ```powershell
-dotnet tool install --global MHX --source ./artifacts/packages --version 0.2.0
+dotnet tool install --global MHX --source ./artifacts/packages --version 0.2.1
 ```
 
 The SDK generates `mhx.exe` in `%USERPROFILE%/.dotnet/tools` (or `mhx` in
