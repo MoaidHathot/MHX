@@ -25,7 +25,7 @@ Download binaries and the bootstrap from the [latest GitHub Release](https://git
 Keep `scripts/Install-Mhx.ps1` in your dotfiles and run it during machine setup:
 
 ```powershell
-./scripts/Install-Mhx.ps1 -ProfileDirectory "$env:Moaid_Config_Path/config/mhx"
+./scripts/Install-Mhx.ps1
 ```
 
 The installer downloads the **latest stable Native AOT release**, verifies its
@@ -33,6 +33,13 @@ SHA-256 and size, and installs it into the per-user MHX binary directory. There
 is no launcher version pin. On Windows it registers user PATH and `MHX_HOME`;
 restart existing terminals/background harnesses afterward. On Unix it prints
 the PATH/profile-home entries to add to your application environment.
+
+The profile directory defaults to `$XDG_CONFIG_HOME/mhx` on **all platforms,
+including Windows**. An existing `MHX_HOME` takes precedence, and an explicit
+`-ProfileDirectory` overrides both. Without either environment setting, MHX uses
+`%LOCALAPPDATA%/MHX` on Windows or `~/.config/mhx` on Unix. Empty or relative
+`XDG_CONFIG_HOME` values are ignored. With your XDG directory pointing at the
+dotfiles `config` folder, no profile-directory argument is needed.
 
 The repository is currently private. Downloads use `GH_TOKEN` / `GITHUB_TOKEN`,
 or an existing `gh auth login` session. Tokens are never written into profiles,
@@ -52,7 +59,7 @@ For the .NET-tool installation channel, the same bootstrap can install the
 release's verified NuGet package using the SDK:
 
 ```powershell
-./scripts/Install-Mhx.ps1 -Method dotnet-tool -ProfileDirectory "$env:Moaid_Config_Path/config/mhx"
+./scripts/Install-Mhx.ps1 -Method dotnet-tool
 ```
 
 `mhx update` also supports installed global/custom-path .NET tools. Windows
@@ -87,8 +94,7 @@ Visual C++ toolchain on Windows). Build on the target operating system.
 Register your dotfiles location once on Windows:
 
 ```powershell
-./scripts/Register-Mhx.ps1 -BinDirectory 'P:/github/MyDotfiles/bin' `
-    -ProfileDirectory 'P:/github/MyDotfiles/config/mhx'
+./scripts/Register-Mhx.ps1 -BinDirectory 'P:/github/MyDotfiles/bin'
 ```
 
 This adds the binary directory to **user PATH** and sets **MHX_HOME** at user
@@ -105,7 +111,7 @@ The same publish script builds `artifacts/packages/MHX.<version>.nupkg`.
 Install from this local directory (no public feed is needed):
 
 ```powershell
-dotnet tool install --global MHX --source ./artifacts/packages --version 0.2.1
+dotnet tool install --global MHX --source ./artifacts/packages --version 0.2.2
 ```
 
 The SDK generates `mhx.exe` in `%USERPROFILE%/.dotnet/tools` (or `mhx` in

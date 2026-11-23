@@ -56,7 +56,11 @@ internal static class Installation
 
     public static void Register(string bin, string? profileDirectory)
     {
-        if (profileDirectory is not null) Directory.CreateDirectory(profileDirectory);
+        if (profileDirectory is not null)
+        {
+            if (OperatingSystem.IsWindows()) Directory.CreateDirectory(profileDirectory);
+            else Directory.CreateDirectory(profileDirectory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
         if (OperatingSystem.IsWindows())
         {
             string old = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.User) ?? "";

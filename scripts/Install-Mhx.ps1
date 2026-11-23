@@ -9,6 +9,26 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
+function Get-MhxProfileDirectory([string] $ExplicitDirectory) {
+    if (-not [string]::IsNullOrEmpty($ExplicitDirectory)) {
+        return [IO.Path]::GetFullPath($ExplicitDirectory, (Get-Location).ProviderPath)
+    }
+    if (-not [string]::IsNullOrEmpty($env:MHX_HOME)) {
+        if (-not [IO.Path]::IsPathFullyQualified($env:MHX_HOME)) { throw 'MHX_HOME must be an absolute path.' }
+        return [IO.Path]::GetFullPath($env:MHX_HOME)
+    }
+    if ($env:XDG_CONFIG_HOME -and [IO.Path]::IsPathFullyQualified($env:XDG_CONFIG_HOME)) {
+        return [IO.Path]::GetFullPath([IO.Path]::Combine($env:XDG_CONFIG_HOME, 'mhx'))
+    }
+    $fallback = if ($IsWindows) {
+        [IO.Path]::Combine([Environment]::GetFolderPath('LocalApplicationData'), 'MHX')
+    } else {
+        [IO.Path]::Combine([Environment]::GetFolderPath('UserProfile'), '.config', 'mhx')
+    }
+    if (-not [IO.Path]::IsPathFullyQualified($fallback)) { throw 'Cannot determine an absolute profile directory.' }
+    return $fallback
+}
+
 function Get-MhxToken {
     foreach ($name in @('GH_TOKEN', 'GITHUB_TOKEN')) {
         $value = [Environment]::GetEnvironmentVariable($name)
@@ -158,6 +178,7 @@ function Save-MhxAsset($Client, $Plan, [string] $Destination, [string] $Token, $
 
 function Install-Mhx {
     param([string] $Method = 'native', [string] $InstallDirectory, [string] $ProfileDirectory, [switch] $NoRegister)
+    if (-not $NoRegister) { $ProfileDirectory = Get-MhxProfileDirectory $ProfileDirectory }
     $handler = [Net.Http.HttpClientHandler]::new()
     $handler.AllowAutoRedirect = $false
     $handler.UseCookies = $false
@@ -180,7 +201,7 @@ function Install-Mhx {
         $start.UseShellExecute = $false
         foreach ($argument in @('--mhx-install', '--method', $Method)) { $start.ArgumentList.Add($argument) }
         if ($InstallDirectory) { $start.ArgumentList.Add('--directory'); $start.ArgumentList.Add([IO.Path]::GetFullPath($InstallDirectory)) }
-        if ($ProfileDirectory) { $start.ArgumentList.Add('--profile-directory'); $start.ArgumentList.Add([IO.Path]::GetFullPath($ProfileDirectory)) }
+        if ($ProfileDirectory) { $start.ArgumentList.Add('--profile-directory'); $start.ArgumentList.Add([IO.Path]::GetFullPath($ProfileDirectory, (Get-Location).ProviderPath)) }
         if ($NoRegister) { $start.ArgumentList.Add('--no-register') }
         $process = [Diagnostics.Process]::Start($start)
         try { $process.WaitForExit(); if ($process.ExitCode -ne 0) { throw "MHX installation failed (exit $($process.ExitCode))." } }

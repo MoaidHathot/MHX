@@ -28,12 +28,12 @@ internal static class ProfileLocator
 {
     public static string Home(IReadOnlyDictionary<string, string> environment)
     {
-        if (environment.TryGetValue("MHX_HOME", out string? home))
+        if (environment.TryGetValue("MHX_HOME", out string? home) && !string.IsNullOrEmpty(home))
             return RequireAbsolute(home, "MHX_HOME");
+        if (environment.TryGetValue("XDG_CONFIG_HOME", out string? xdg) && Path.IsPathFullyQualified(xdg))
+            return Path.GetFullPath(Path.Combine(xdg, "mhx"));
         if (OperatingSystem.IsWindows())
             return RequireAbsolute(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MHX"), "User configuration directory");
-        if (environment.TryGetValue("XDG_CONFIG_HOME", out string? xdg) && Path.IsPathFullyQualified(xdg))
-            return Path.Combine(xdg, "mhx");
         return RequireAbsolute(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config", "mhx"), "User configuration directory");
     }
 

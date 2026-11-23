@@ -1,3 +1,6 @@
+using MHX.Configuration;
+using MHX.Execution;
+
 namespace MHX.Distribution;
 
 internal static class Management
@@ -24,12 +27,16 @@ internal static class Management
             if (option == "--profile-directory") profiles = Path.GetFullPath(arguments[i]);
             if (option == "--method") method = arguments[i];
         }
+        if (register) profiles = ProfileDirectory(profiles, PlanBuilder.ReadEnvironment());
         if (method == "dotnet-tool")
             return Cancellable(token => ToolPackageInstall.FromRelease(directory ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".dotnet", "tools"), profiles, register, token));
         if (method != "native") throw new MhxException("Installation method must be native or dotnet-tool.", 2);
         if (AppInfo.IsTool) throw new MhxException("Use a standalone release executable to install the native distribution.");
         return Installation.InstallNative(Environment.ProcessPath!, directory ?? Installation.DefaultBin, profiles, register);
     }
+
+    internal static string ProfileDirectory(string? explicitDirectory, IReadOnlyDictionary<string, string> environment) =>
+        explicitDirectory is null ? ProfileLocator.Home(environment) : Path.GetFullPath(explicitDirectory);
 
     private static int Cancellable(Func<CancellationToken, Task<int>> operation)
     {

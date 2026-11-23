@@ -38,6 +38,14 @@ The .NET-tool method defaults to `~/.dotnet/tools`. Registration is per-user;
 Unix shells/GUI applications must receive the printed PATH and `MHX_HOME`
 settings through their existing environment setup.
 
+`-ProfileDirectory` is optional for both installation methods and the registration
+script. The common default order is an explicit directory, nonempty `MHX_HOME`,
+absolute `$XDG_CONFIG_HOME/mhx`, then `%LOCALAPPDATA%/MHX` on Windows or
+`~/.config/mhx` on Unix. XDG works on Windows too. Empty/relative XDG values
+are ignored rather than interpreted relative to the working directory.
+Registration creates a missing profile directory (with private permissions on
+Unix); `-NoRegister` and registration `-WhatIf` do not create one.
+
 Windows registration puts the selected installation first in **user** PATH,
 without deleting other installations. A system-wide PATH entry can still take
 precedence; remove an unwanted system-wide installation or adjust that environment

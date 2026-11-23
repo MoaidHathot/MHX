@@ -14,7 +14,7 @@ $utf8 = [Text.UTF8Encoding]::new($false)
 $oldProcess = $null
 $helper = $null
 $saved = @{}
-foreach ($name in @('DOTNET_CLI_HOME', 'NUGET_PACKAGES', 'NUGET_HTTP_CACHE_PATH', 'DOTNET_CLI_TELEMETRY_OPTOUT', 'DOTNET_NOLOGO')) {
+foreach ($name in @('DOTNET_CLI_HOME', 'NUGET_PACKAGES', 'NUGET_HTTP_CACHE_PATH', 'DOTNET_CLI_TELEMETRY_OPTOUT', 'DOTNET_NOLOGO', 'MHX_HOME', 'XDG_CONFIG_HOME')) {
     $saved[$name] = [Environment]::GetEnvironmentVariable($name)
 }
 try {
@@ -24,6 +24,26 @@ try {
     $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
     $env:DOTNET_NOLOGO = '1'
     . (Join-Path $root 'scripts/Install-Mhx.ps1') -LibraryOnly
+    [Environment]::SetEnvironmentVariable('MHX_HOME', $null)
+    [Environment]::SetEnvironmentVariable('XDG_CONFIG_HOME', $null)
+    $fallbackProfiles = Get-MhxProfileDirectory
+    $env:XDG_CONFIG_HOME = Join-Path $temporary 'xdg-config'
+    $expectedProfiles = Join-Path $env:XDG_CONFIG_HOME 'mhx'
+    if ((Get-MhxProfileDirectory) -ne $expectedProfiles) { throw 'Bootstrap does not use XDG_CONFIG_HOME/mhx.' }
+    $env:MHX_HOME = Join-Path $temporary 'custom-profiles'
+    if ((Get-MhxProfileDirectory) -ne $env:MHX_HOME) { throw 'Bootstrap did not preserve MHX_HOME.' }
+    $explicitProfiles = Join-Path $temporary 'explicit-profiles'
+    if ((Get-MhxProfileDirectory $explicitProfiles) -ne $explicitProfiles) { throw 'Explicit profile directory lost precedence.' }
+    $env:MHX_HOME = 'invalid-relative'
+    if ((Get-MhxProfileDirectory $explicitProfiles) -ne $explicitProfiles) { throw 'Explicit profile directory must not depend on unused defaults.' }
+    $invalidRejected = $false
+    try { Get-MhxProfileDirectory | Out-Null } catch { $invalidRejected = $true }
+    if (-not $invalidRejected) { throw 'Relative MHX_HOME was accepted.' }
+    [Environment]::SetEnvironmentVariable('MHX_HOME', $null)
+    $env:XDG_CONFIG_HOME = 'relative'
+    if ((Get-MhxProfileDirectory) -ne $fallbackProfiles) { throw 'Relative XDG_CONFIG_HOME must be ignored.' }
+    $env:XDG_CONFIG_HOME = Join-Path $temporary 'xdg-config'
+    Write-Host 'PASS bootstrap profile-directory defaults and override precedence'
     # Network seams only: real hash verification and real installer execution.
     $fixturePlan = @{ Version=$build.Version; File=@{ size=(Get-Item $executablePath).Length; sha256=(Get-FileHash $executablePath -Algorithm SHA256).Hash } }
     function Get-MhxToken { return $null }
@@ -32,8 +52,21 @@ try {
     $nativeDirectory = Join-Path $temporary 'native'
     Install-Mhx -InstallDirectory $nativeDirectory -NoRegister
     Install-Mhx -InstallDirectory $nativeDirectory -NoRegister
+    if (Test-Path -LiteralPath $expectedProfiles) { throw 'NoRegister created a profile directory.' }
+    if ($IsWindows) {
+        & (Join-Path $root 'scripts/Register-Mhx.ps1') -BinDirectory $nativeDirectory -WhatIf
+        if (Test-Path -LiteralPath $expectedProfiles) { throw 'Registration WhatIf created a profile directory.' }
+    }
     $native = Join-Path $nativeDirectory "mhx$extension"
     if ((& $native --mhx-version) -ne $build.Version) { throw 'Installed native version is wrong.' }
+    if (-not $IsWindows) {
+        # Unix registration prints environment instructions; it does not edit
+        # shell configuration. Exercise managed defaults without registry writes.
+        & $native --mhx-install --directory $nativeDirectory
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $expectedProfiles -PathType Container)) { throw 'Native installer did not create its default XDG profile directory.' }
+        $expectedMode = [IO.UnixFileMode]::UserRead -bor [IO.UnixFileMode]::UserWrite -bor [IO.UnixFileMode]::UserExecute
+        if ([IO.File]::GetUnixFileMode($expectedProfiles) -ne $expectedMode) { throw 'New profile directory must be private.' }
+    }
     $initialHash = (Get-FileHash $native -Algorithm SHA256).Hash
     $fixturePlan.File.sha256 = '0' * 64
     $rejected = $false

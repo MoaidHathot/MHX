@@ -108,6 +108,41 @@ public sealed class ConfigurationTests
     }
 
     [Fact]
+    public void ProfileHomeUsesXdgOnEveryPlatform()
+    {
+        using TestFiles files = new();
+        Dictionary<string, string> environment = new() { ["XDG_CONFIG_HOME"] = Path.Combine(files.Directory, "config") };
+        Assert.Equal(Path.Combine(files.Directory, "config", "mhx"), ProfileLocator.Home(environment));
+        environment["MHX_HOME"] = "";
+        Assert.Equal(Path.Combine(files.Directory, "config", "mhx"), ProfileLocator.Home(environment));
+    }
+
+    [Fact]
+    public void ApplicationHomeOverridesXdgAndRejectsInvalidOverrides()
+    {
+        using TestFiles files = new();
+        Dictionary<string, string> environment = new()
+        {
+            ["MHX_HOME"] = Path.Combine(files.Directory, "custom"),
+            ["XDG_CONFIG_HOME"] = Path.Combine(files.Directory, "config"),
+        };
+        Assert.Equal(environment["MHX_HOME"], ProfileLocator.Home(environment));
+        environment["MHX_HOME"] = "relative";
+        Assert.Throws<MhxException>(() => ProfileLocator.Home(environment));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("relative")]
+    [InlineData(" ")]
+    public void InvalidXdgHomeUsesPlatformFallback(string xdg)
+    {
+        string fallback = ProfileLocator.Home(new Dictionary<string, string>());
+        Assert.True(Path.IsPathFullyQualified(fallback));
+        Assert.Equal(fallback, ProfileLocator.Home(new Dictionary<string, string> { ["XDG_CONFIG_HOME"] = xdg }));
+    }
+
+    [Fact]
     public void AllShippedProfilesAreValid()
     {
         foreach (string path in Directory.EnumerateFiles(Path.Combine(TestFiles.Root, "examples")))

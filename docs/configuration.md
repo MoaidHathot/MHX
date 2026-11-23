@@ -12,8 +12,11 @@
 6. Only a launcher named `mhx` falls back to the built-in .NET-tool profile.
    A renamed launcher without a profile fails rather than guessing a command.
 
-The profile home is absolute `MHX_HOME`, then `%LOCALAPPDATA%/MHX` on Windows,
-or `$XDG_CONFIG_HOME/mhx` / `~/.config/mhx` on Unix. Working directories and
+The profile home is nonempty absolute `MHX_HOME`, then `$XDG_CONFIG_HOME/mhx`
+on every platform (including Windows), then `%LOCALAPPDATA%/MHX` on Windows
+or `~/.config/mhx` on Unix. Empty or relative XDG values are ignored; a nonempty
+relative `MHX_HOME` is an error. Installer `-ProfileDirectory` / `--profile-directory`
+options override these defaults. Working directories and
 ancestor repositories are never searched automatically. If both extensions
 exist for a selected name, selection fails. Access errors and malformed files
 fail rather than falling back to defaults. A symlink does not necessarily keep

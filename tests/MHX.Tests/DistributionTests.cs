@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using MHX.Distribution;
+using MHX.Configuration;
 
 namespace MHX.Tests;
 
@@ -175,6 +176,18 @@ public sealed class DistributionTests
         string path = Installation.PreferredUserPath(@"C:\old-tools;C:\mhx\bin\;C:\other", @"C:\MHX\bin");
         Assert.Equal(@"C:\MHX\bin;C:\old-tools;C:\other", path);
         Assert.Equal(path, Installation.PreferredUserPath(path, @"C:\MHX\bin"));
+    }
+
+    [Fact]
+    public void InstallerDefaultMatchesRuntimeDiscoveryAndExplicitDirectoryWins()
+    {
+        using TestFiles files = new();
+        Dictionary<string, string> environment = new() { ["XDG_CONFIG_HOME"] = files.Directory };
+        Assert.Equal(Path.Combine(files.Directory, "mhx"), Management.ProfileDirectory(null, environment));
+        Assert.Equal(ProfileLocator.Home(environment), Management.ProfileDirectory(null, environment));
+        environment["MHX_HOME"] = "invalid-relative-override";
+        string explicitDirectory = Path.Combine(files.Directory, "explicit");
+        Assert.Equal(explicitDirectory, Management.ProfileDirectory(explicitDirectory, environment));
     }
 
     [Fact]
