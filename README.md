@@ -110,6 +110,12 @@ launch MHX and set `MHX_HOME` there; ensure `mhx` has execute permission.
 
 ### .NET tool
 
+Install the published package from NuGet.org using the v2 feed:
+
+```powershell
+dotnet tool install --global MHX --source https://www.nuget.org/api/v2/
+```
+
 The same publish script builds `artifacts/packages/MHX.<version>.nupkg`.
 Install from this local directory (no public feed is needed):
 
