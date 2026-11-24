@@ -1,0 +1,20 @@
+name: verify-publish-boundary
+
+# Manual negative control. Dispatch on a branch; GitHub must reject the job
+# before any runner starts. No publishing permissions or credentials are requested.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  branch-must-not-deploy:
+    if: github.repository == 'MoaidHathot/MHX' && github.ref_type == 'branch'
+    environment: nuget-publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Protection failure if this step is reached
+        run: |
+          echo 'ERROR: a branch reached the tag-only publication environment.'
+          exit 1

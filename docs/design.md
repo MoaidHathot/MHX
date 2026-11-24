@@ -63,9 +63,9 @@ MHX's implementation is original code; no Scoop binary or source is bundled.
 
 ## Research evidence and boundaries
 
-Before implementation, this Windows environment successfully installed
-`Zakira.Recall@0.6.1` and the November 13 publication `Zakira.Retrace@0.4.0`
-through the SDK using only NuGet v2, in isolated temporary directories. Raw
+Before implementation, the Windows test environment successfully installed
+public .NET tools, including a freshly published version, through the SDK using
+only NuGet v2 in isolated temporary directories. Raw
 Windows process spawning rejected `.ps1` and `.cmd`, while direct executable
 launching and explicit interpreter invocation worked. These findings motivated
 the executable entry point and SDK delegation.

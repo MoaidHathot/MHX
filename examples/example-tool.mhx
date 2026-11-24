@@ -2,5 +2,5 @@
   "$schema": "../schemas/mhx.schema.json",
   "version": 1,
   "kind": "dotnet-tool",
-  "arguments": ["Zakira.Recall", "--"]
+  "arguments": ["Example.Tool", "--"]
 }

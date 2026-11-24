@@ -1,5 +1,8 @@
 # Security and privacy
 
+Release authorization, fork/PR isolation, and repository privacy checks are
+documented in [publishing security](docs/publishing-security.md).
+
 MHX launches commands with the current account's permissions. Selected profiles
 are executable configuration: their owner chooses programs, arguments, working
 directories, and environment values. Child programs retain their own filesystem,

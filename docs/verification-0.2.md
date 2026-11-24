@@ -70,7 +70,7 @@ Both previously installed release `0.2.0` distributions then successfully ran
 the native executable replaced itself, and the .NET-tool handoff completed with
 a successful status record. This exercised an actual release-to-release upgrade.
 
-GitHub releases are private because the repository is private; use GitHub
-authentication when installing/updating. NuGet.org publication requires the
+The initial checks above exercised private releases. The repository and releases
+are now public, so authentication is optional for downloading. NuGet.org publication requires the
 owner to configure its Trusted Publishing policy and `NUGET_USER`. The GitHub
 release's `.nupkg` can be installed through the bootstrap without that setup.

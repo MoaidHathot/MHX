@@ -15,9 +15,9 @@ canonical `MHX.<version>.nupkg`, `Install-Mhx.ps1`, `mhx-release.json`, and
 an executable for the wrong architecture. The portable NuGet package remains a
 separate distribution channel.
 
-The GitHub repository is private. Installer/update requests use environment
-credentials (`GH_TOKEN`, then `GITHUB_TOKEN`) or the locally authenticated
-GitHub CLI. Neither is required for public repositories. API credentials are
+The GitHub repository and its releases are public; anonymous downloads work.
+Installer/update requests also support environment credentials (`GH_TOKEN`, then
+`GITHUB_TOKEN`) or the locally authenticated GitHub CLI. API credentials are
 sent only to `api.github.com`; asset-CDN redirects receive no Authorization
 header. The repository's visibility is not changed by these workflows.
 
@@ -117,7 +117,9 @@ GitHub release/package downloads need no NuGet publishing credentials. To also
 publish to NuGet.org:
 
 1. In the owning NuGet.org account, create a Trusted Publishing policy for
-   repository owner `MoaidHathot`, repository `MHX`, workflow file `release.yml`.
+   repository owner `MoaidHathot`, repository `MHX`, workflow file `release.yml`,
+   and environment **`nuget-publish`**. Restrict the package pattern to `MHX` and
+   permit publishing the initial package and subsequent versions.
 2. Set the GitHub repository variable `NUGET_USER` to the NuGet profile name.
 3. Release a tag, or rerun the NuGet job after configuring the policy.
 
@@ -125,6 +127,12 @@ The NuGet job uses OIDC and a short-lived key from `NuGet/login`. No long-lived
 API key is stored in the repository. With no `NUGET_USER`, that job is skipped;
 the `.nupkg` is still available in the GitHub release. Package ownership/policy
 setup must be completed by the NuGet account owner.
+
+The GitHub `nuget-publish` environment permits only `v*` tags. The NuGet policy
+must require this environment; a blank environment condition is broader and
+does not enforce this deployment boundary. Release tags and `main` are restricted
+to the repository owner, and releases must point to commits already on `main`.
+Fork/PR/branch contexts cannot publish. See [publishing security](publishing-security.md).
 
 WinGet can later reference the same versioned Windows asset and SHA-256. Public
 WinGet distribution requires a publicly accessible download location; private

@@ -19,7 +19,7 @@ unexecuted CI jobs.
 - Those executions preserved UTF-8 MCP-style stdout, empty/quoted/metacharacter
   arguments, working directory, and exit status, while running inside a project
   pinned to an older SDK.
-- The built-in v2 backend downloaded and executed `Zakira.Recall@0.6.1 -- --help`
+- The built-in v2 backend downloaded and executed an explicitly selected public tool's `--help`
   with isolated, fresh SDK/package/HTTP caches.
 - The registration script's `-WhatIf` path completed successfully.
 
@@ -30,7 +30,7 @@ dotnet test MHX.slnx -c Release
 ./scripts/Publish.ps1 -Runtime win-x64
 $env:MHX_TEST_EXE = "$PWD/artifacts/publish/win-x64/mhx.exe"
 dotnet test MHX.slnx -c Release --no-restore
-./scripts/Verify-Packages.ps1 -OnlineTool Zakira.Recall@0.6.1
+./scripts/Verify-Packages.ps1 -OnlineTool <PACKAGE@VERSION>
 ```
 
 The tests cover parser defaults, invalid UTF-8 and oversized input, unknown and

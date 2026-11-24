@@ -4,17 +4,19 @@ A small, configurable launcher you own. Run .NET tools through NuGet v2, or turn
 the same executable into a named launcher for any executable.
 
 ```console
-mhx Zakira.Recall -- mcp
+mhx Example.McpServer -- mcp
 mhx Some.Tool@1.2.3 -- --help
-mhx --mhx-profile recall mcp
+mhx --mhx-profile example-tool --help
 ```
 
 Callers only need `mhx` on `PATH`. PowerShell profiles, script paths, and shell
 wrappers are unnecessary, including for MCP stdio clients:
 
 ```json
-"command": ["mhx", "Zakira.Recall", "--", "mcp"]
+"command": ["mhx", "Example.McpServer", "--", "mcp"]
 ```
+
+`Example.*` package IDs are placeholders; substitute the tool package you want to run.
 
 ## Install / distribute
 
@@ -41,9 +43,10 @@ including Windows**. An existing `MHX_HOME` takes precedence, and an explicit
 `XDG_CONFIG_HOME` values are ignored. With your XDG directory pointing at the
 dotfiles `config` folder, no profile-directory argument is needed.
 
-The repository is currently private. Downloads use `GH_TOKEN` / `GITHUB_TOKEN`,
-or an existing `gh auth login` session. Tokens are never written into profiles,
-installation metadata, or update requests. Public releases also work anonymously.
+This repository and its releases are public. Downloads work anonymously.
+`GH_TOKEN` / `GITHUB_TOKEN` or an existing `gh auth login` session are also
+supported. Tokens are never written into profiles, installation metadata, or
+update requests.
 
 ```powershell
 mhx update --check
@@ -94,7 +97,7 @@ Visual C++ toolchain on Windows). Build on the target operating system.
 Register your dotfiles location once on Windows:
 
 ```powershell
-./scripts/Register-Mhx.ps1 -BinDirectory 'P:/github/MyDotfiles/bin'
+./scripts/Register-Mhx.ps1 -BinDirectory 'C:/Tools/MHX'
 ```
 
 This adds the binary directory to **user PATH** and sets **MHX_HOME** at user
@@ -111,7 +114,7 @@ The same publish script builds `artifacts/packages/MHX.<version>.nupkg`.
 Install from this local directory (no public feed is needed):
 
 ```powershell
-dotnet tool install --global MHX --source ./artifacts/packages --version 0.2.2
+dotnet tool install --global MHX --source ./artifacts/packages --version 0.2.3
 ```
 
 The SDK generates `mhx.exe` in `%USERPROFILE%/.dotnet/tools` (or `mhx` in
@@ -149,18 +152,18 @@ can introduce non-protocol output, so use the quiet default for MCP servers.
 Use JSON in a `.mhx` file. Comments and trailing commas are accepted; unknown
 fields, duplicate properties, invalid types, and unsupported versions are errors.
 
-`recall.mhx`:
+`example-tool.mhx`:
 
 ```json
 {
   "version": 1,
   "kind": "dotnet-tool",
-  "arguments": ["Zakira.Recall", "--"]
+  "arguments": ["Example.Tool", "--"]
 }
 ```
 
-Run it as `mhx --mhx-profile recall mcp`. Alternatively, copy the published
-launcher to `recall.exe` and put `recall.mhx` beside it: `recall mcp` now works
+Run it as `mhx --mhx-profile example-tool --help`. Alternatively, copy the published
+launcher to `example-tool.exe` and put `example-tool.mhx` beside it: `example-tool --help` now works
 from any normal process launcher. Copies of the single-file build are independent
 aliases; the framework-dependent executable still needs its compatible runtime.
 
@@ -197,7 +200,7 @@ dotnet test MHX.slnx -c Release
 ```
 
 For an explicit network smoke test using a tool you select, append, for example,
-`-OnlineTool Zakira.Recall@0.6.1`. This downloads and executes that tool's `--help`
+`-OnlineTool Example.Tool@1.2.3` (substitute a real package/version). This downloads and executes that tool's `--help`
 through the built-in v2 backend using isolated caches.
 
 The tests include malformed profiles, discovery rules, literal/randomized argv,
